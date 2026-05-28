@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>대학별 모집요강 자료실</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f4ed;
+    --paper: #fffdf7;
+    --ink: #1a1a1a;
+    --muted: #6b6358;
+    --line: #d9d2c2;
+    --accent: #8b2a2a;
+  }
+  
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+  }
+  
+  header {
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 2rem;
+    margin-bottom: 3rem;
+  }
+  
+  h1 {
+    font-family: 'Gowun Batang', serif;
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+  
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.95rem;
+    margin-top: 0.5rem;
+  }
+  
+  .crumb {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1.5rem;
+  }
+  .crumb a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .crumb a:hover { text-decoration: underline; }
+  
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  
+  .card {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 1.5rem 1.25rem;
+    text-decoration: none;
+    color: var(--ink);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    display: block;
+  }
+  
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: var(--ink);
+  }
+  
+  .card-name {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+  
+  .card-count {
+    color: var(--muted);
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  
+  .year-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .year-item {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    padding: 1.25rem 1.5rem;
+    text-decoration: none;
+    color: var(--ink);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.15s ease, border-color 0.15s ease;
+  }
+  
+  .year-item:hover {
+    background: #fff;
+    border-color: var(--ink);
+  }
+  
+  .year-num {
+    font-family: 'Gowun Batang', serif;
+    font-size: 1.4rem;
+  }
+  
+  .year-arrow {
+    color: var(--muted);
+  }
+  
+  .viewer {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    height: calc(100vh - 250px);
+    min-height: 500px;
+  }
+  
+  .viewer iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+  
+  .empty {
+    color: var(--muted);
+    text-align: center;
+    padding: 3rem 1rem;
+    background: var(--paper);
+    border: 1px dashed var(--line);
+  }
+  
+  footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+  }
+  
+  @media (max-width: 640px) {
+    .container { padding: 2rem 1rem; }
+    h1 { font-size: 1.75rem; }
+    .viewer { height: calc(100vh - 200px); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>대학별 모집요강 자료실</h1>
+    <p class="subtitle">대학교 모집요강 PDF 모음</p>
+  </header>
+  
+  <main id="content"></main>
+  
+  <footer>
+    이 페이지는 자료 보관 및 공유 용도입니다.
+  </footer>
+</div>
+
+<script>
+let data = null;
+
+async function loadData() {
+  const res = await fetch('data.json');
+  if (!res.ok) throw new Error('data.json 파일을 찾을 수 없습니다');
+  data = await res.json();
+}
+
+function render() {
+  const hash = decodeURIComponent(window.location.hash.slice(1));
+  const content = document.getElementById('content');
+  
+  if (!hash) {
+    renderHome(content);
+    return;
+  }
+  
+  const parts = hash.split('/');
+  const univId = parts[0];
+  const year = parts[1];
+  
+  const univ = data.universities.find(u => u.id === univId);
+  if (!univ) {
+    renderHome(content);
+    return;
+  }
+  
+  if (!year) {
+    renderUniv(content, univ);
+    return;
+  }
+  
+  const yearData = univ.years.find(y => String(y.year) === year);
+  if (!yearData) {
+    renderUniv(content, univ);
+    return;
+  }
+  
+  renderViewer(content, univ, yearData);
+}
+
+function renderHome(el) {
+  if (!data.universities || data.universities.length === 0) {
+    el.innerHTML = `<div class="empty">아직 등록된 대학이 없습니다.</div>`;
+    return;
+  }
+  
+  const cards = data.universities.map(u => `
+    <a class="card" href="#${u.id}">
+      <div class="card-name">${u.name}</div>
+      <div class="card-count">${u.years.length}개 자료</div>
+    </a>
+  `).join('');
+  
+  el.innerHTML = `<div class="grid">${cards}</div>`;
+}
+
+function renderUniv(el, univ) {
+  if (univ.years.length === 0) {
+    el.innerHTML = `
+      <div class="crumb"><a href="#">전체</a> / ${univ.name}</div>
+      <div class="empty">아직 등록된 자료가 없습니다.</div>
+    `;
+    return;
+  }
+  
+  const sorted = [...univ.years].sort((a, b) => b.year - a.year);
+  
+  const items = sorted.map(y => `
+    <a class="year-item" href="#${univ.id}/${y.year}">
+      <span class="year-num">${y.year}학년도</span>
+      <span class="year-arrow">→</span>
+    </a>
+  `).join('');
+  
+  el.innerHTML = `
+    <div class="crumb"><a href="#">전체</a> / ${univ.name}</div>
+    <div class="year-list">${items}</div>
+  `;
+}
+
+function renderViewer(el, univ, yearData) {
+  el.innerHTML = `
+    <div class="crumb">
+      <a href="#">전체</a> / 
+      <a href="#${univ.id}">${univ.name}</a> / 
+      ${yearData.year}학년도
+    </div>
+    <div class="viewer">
+      <iframe src="${yearData.file}" title="${univ.name} ${yearData.year}학년도 모집요강"></iframe>
+    </div>
+  `;
+}
+
+window.addEventListener('hashchange', render);
+
+loadData().then(render).catch(err => {
+  document.getElementById('content').innerHTML = `
+    <div class="empty">데이터를 불러오지 못했습니다.<br>data.json 파일이 있는지 확인해주세요.</div>
+  `;
+  console.error(err);
+});
+</script>
+</body>
+</html>
