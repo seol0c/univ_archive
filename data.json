@@ -4,7 +4,7 @@
       "id": "seoul",
       "name": "서울대학교",
       "years": [
-        {"year": 2026, "file": "pdfs/seoul/2026.pdf"},
+        {"year": 2026, "file": "pdfs/seoul/2026susi.pdf"},
         {"year": 2025, "file": "pdfs/seoul/2025.pdf"}
       ]
     },
