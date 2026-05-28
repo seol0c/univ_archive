@@ -91,12 +91,6 @@
     font-weight: 700;
   }
   
-  .card-count {
-    color: var(--muted);
-    font-size: 0.85rem;
-    margin-top: 0.5rem;
-  }
-  
   .year-list {
     display: flex;
     flex-direction: column;
@@ -150,6 +144,13 @@
     border: 1px dashed var(--line);
   }
   
+  .empty small {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    opacity: 0.7;
+  }
+  
   footer {
     margin-top: 4rem;
     padding-top: 2rem;
@@ -173,7 +174,9 @@
     <p class="subtitle">대학교 모집요강 PDF 모음</p>
   </header>
   
-  <main id="content"></main>
+  <main id="content">
+    <div class="empty">불러오는 중...</div>
+  </main>
   
   <footer>
     이 페이지는 자료 보관 및 공유 용도입니다.
@@ -181,108 +184,146 @@
 </div>
 
 <script>
-let data = null;
+// =====================================================================
+const GITHUB_USER = 'seol0c';
+const GITHUB_REPO = 'univ_archive';
+// =====================================================================
 
-async function loadData() {
-  const res = await fetch('data.json');
-  if (!res.ok) throw new Error('data.json 파일을 찾을 수 없습니다');
-  data = await res.json();
+const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
+const cache = {};
+
+// 폴더 이름에서 정렬용 숫자 접두사 제거 (예: "01-서울대학교" → "서울대학교")
+function displayName(folderName) {
+  return folderName.replace(/^\d+[-_\s.]?\s*/, '');
 }
 
-function render() {
-  const hash = decodeURIComponent(window.location.hash.slice(1));
+async function listFolder(path) {
+  if (cache[path]) return cache[path];
+  const url = `${API_BASE}/${path.split('/').map(encodeURIComponent).join('/')}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`불러오기 실패 (${res.status}): ${path}`);
+  const items = await res.json();
+  cache[path] = items;
+  return items;
+}
+
+async function getUniversities() {
+  const items = await listFolder('pdfs');
+  return items
+    .filter(i => i.type === 'dir')
+    .map(i => ({ folder: i.name, display: displayName(i.name) }))
+    .sort((a, b) => a.folder.localeCompare(b.folder, 'ko'));
+}
+
+async function getYears(univFolder) {
+  const items = await listFolder(`pdfs/${univFolder}`);
+  return items
+    .filter(i => i.type === 'file' && i.name.toLowerCase().endsWith('.pdf'))
+    .map(i => ({
+      label: i.name.replace(/\.pdf$/i, ''),
+      file: i.path
+    }))
+    .sort((a, b) => b.label.localeCompare(a.label));
+}
+
+async function render() {
   const content = document.getElementById('content');
+  const hash = decodeURIComponent(window.location.hash.slice(1));
   
-  if (!hash) {
-    renderHome(content);
-    return;
+  try {
+    if (!hash) {
+      content.innerHTML = '<div class="empty">불러오는 중...</div>';
+      const univs = await getUniversities();
+      renderHome(content, univs);
+      return;
+    }
+    
+    const parts = hash.split('/');
+    const univFolder = parts[0];
+    const label = parts[1];
+    
+    content.innerHTML = '<div class="empty">불러오는 중...</div>';
+    const years = await getYears(univFolder);
+    
+    if (!label) {
+      renderUniv(content, univFolder, years);
+      return;
+    }
+    
+    const yearData = years.find(y => y.label === label);
+    if (!yearData) {
+      renderUniv(content, univFolder, years);
+      return;
+    }
+    
+    renderViewer(content, univFolder, yearData);
+  } catch (err) {
+    content.innerHTML = `
+      <div class="empty">
+        목록을 불러오지 못했습니다.<br>
+        GITHUB_USER와 GITHUB_REPO 설정 또는 폴더 구조를 확인해주세요.
+        <small>${err.message}</small>
+      </div>
+    `;
+    console.error(err);
   }
-  
-  const parts = hash.split('/');
-  const univId = parts[0];
-  const year = parts[1];
-  
-  const univ = data.universities.find(u => u.id === univId);
-  if (!univ) {
-    renderHome(content);
-    return;
-  }
-  
-  if (!year) {
-    renderUniv(content, univ);
-    return;
-  }
-  
-  const yearData = univ.years.find(y => String(y.year) === year);
-  if (!yearData) {
-    renderUniv(content, univ);
-    return;
-  }
-  
-  renderViewer(content, univ, yearData);
 }
 
-function renderHome(el) {
-  if (!data.universities || data.universities.length === 0) {
-    el.innerHTML = `<div class="empty">아직 등록된 대학이 없습니다.</div>`;
+function renderHome(el, univs) {
+  if (univs.length === 0) {
+    el.innerHTML = `<div class="empty">아직 등록된 대학이 없습니다.<br><small>pdfs/대학이름/ 형태로 폴더를 만들고 PDF를 올려주세요.</small></div>`;
     return;
   }
   
-  const cards = data.universities.map(u => `
-    <a class="card" href="#${u.id}">
-      <div class="card-name">${u.name}</div>
-      <div class="card-count">${u.years.length}개 자료</div>
+  const cards = univs.map(u => `
+    <a class="card" href="#${encodeURIComponent(u.folder)}">
+      <div class="card-name">${u.display}</div>
     </a>
   `).join('');
   
   el.innerHTML = `<div class="grid">${cards}</div>`;
 }
 
-function renderUniv(el, univ) {
-  if (univ.years.length === 0) {
+function renderUniv(el, univFolder, years) {
+  const name = displayName(univFolder);
+  
+  if (years.length === 0) {
     el.innerHTML = `
-      <div class="crumb"><a href="#">전체</a> / ${univ.name}</div>
+      <div class="crumb"><a href="#">전체</a> / ${name}</div>
       <div class="empty">아직 등록된 자료가 없습니다.</div>
     `;
     return;
   }
   
-  const sorted = [...univ.years].sort((a, b) => b.year - a.year);
-  
-  const items = sorted.map(y => `
-    <a class="year-item" href="#${univ.id}/${y.year}">
-      <span class="year-num">${y.year}학년도</span>
+  const items = years.map(y => `
+    <a class="year-item" href="#${encodeURIComponent(univFolder)}/${encodeURIComponent(y.label)}">
+      <span class="year-num">${y.label}</span>
       <span class="year-arrow">→</span>
     </a>
   `).join('');
   
   el.innerHTML = `
-    <div class="crumb"><a href="#">전체</a> / ${univ.name}</div>
+    <div class="crumb"><a href="#">전체</a> / ${name}</div>
     <div class="year-list">${items}</div>
   `;
 }
 
-function renderViewer(el, univ, yearData) {
+function renderViewer(el, univFolder, yearData) {
+  const name = displayName(univFolder);
   el.innerHTML = `
     <div class="crumb">
       <a href="#">전체</a> / 
-      <a href="#${univ.id}">${univ.name}</a> / 
-      ${yearData.year}학년도
+      <a href="#${encodeURIComponent(univFolder)}">${name}</a> / 
+      ${yearData.label}
     </div>
     <div class="viewer">
-      <iframe src="${yearData.file}" title="${univ.name} ${yearData.year}학년도 모집요강"></iframe>
+      <iframe src="${yearData.file.split('/').map(encodeURIComponent).join('/')}" title="${name} ${yearData.label} 모집요강"></iframe>
     </div>
   `;
 }
 
 window.addEventListener('hashchange', render);
-
-loadData().then(render).catch(err => {
-  document.getElementById('content').innerHTML = `
-    <div class="empty">데이터를 불러오지 못했습니다.<br>data.json 파일이 있는지 확인해주세요.</div>
-  `;
-  console.error(err);
-});
+render();
 </script>
 </body>
 </html>
