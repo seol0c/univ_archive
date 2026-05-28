@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>대학별 모집요강 자료실</title>
+<title>모집요강 자료실</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #f7f4ed;
@@ -30,32 +30,13 @@
   .container {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 4rem 2rem;
-  }
-  
-  header {
-    border-bottom: 2px solid var(--ink);
-    padding-bottom: 2rem;
-    margin-bottom: 3rem;
-  }
-  
-  h1 {
-    font-family: 'Gowun Batang', serif;
-    font-size: 2.5rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-  }
-  
-  .subtitle {
-    color: var(--muted);
-    font-size: 0.95rem;
-    margin-top: 0.5rem;
+    padding: 1.25rem 1.5rem;
   }
   
   .crumb {
     color: var(--muted);
-    font-size: 0.9rem;
-    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
   }
   .crumb a {
     color: var(--accent);
@@ -65,58 +46,48 @@
   
   .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
   }
   
   .card {
     background: var(--paper);
     border: 1px solid var(--line);
-    padding: 1.5rem 1.25rem;
+    padding: 1rem 1.25rem;
     text-decoration: none;
     color: var(--ink);
-    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    transition: border-color 0.15s ease, background 0.15s ease;
     display: block;
+    font-weight: 500;
   }
   
   .card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    background: #fff;
     border-color: var(--ink);
-  }
-  
-  .card-name {
-    font-family: 'Gowun Batang', serif;
-    font-size: 1.25rem;
-    font-weight: 700;
   }
   
   .year-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.4rem;
   }
   
   .year-item {
     background: var(--paper);
     border: 1px solid var(--line);
-    padding: 1.25rem 1.5rem;
+    padding: 0.9rem 1.25rem;
     text-decoration: none;
     color: var(--ink);
     display: flex;
     justify-content: space-between;
     align-items: center;
     transition: background 0.15s ease, border-color 0.15s ease;
+    font-weight: 500;
   }
   
   .year-item:hover {
     background: #fff;
     border-color: var(--ink);
-  }
-  
-  .year-num {
-    font-family: 'Gowun Batang', serif;
-    font-size: 1.4rem;
   }
   
   .year-arrow {
@@ -126,8 +97,8 @@
   .viewer {
     background: var(--paper);
     border: 1px solid var(--line);
-    height: calc(100vh - 250px);
-    min-height: 500px;
+    height: calc(100vh - 90px);
+    min-height: 400px;
   }
   
   .viewer iframe {
@@ -139,7 +110,7 @@
   .empty {
     color: var(--muted);
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
     background: var(--paper);
     border: 1px dashed var(--line);
   }
@@ -151,51 +122,29 @@
     opacity: 0.7;
   }
   
-  footer {
-    margin-top: 4rem;
-    padding-top: 2rem;
-    border-top: 1px solid var(--line);
-    color: var(--muted);
-    font-size: 0.85rem;
-    text-align: center;
-  }
-  
   @media (max-width: 640px) {
-    .container { padding: 2rem 1rem; }
-    h1 { font-size: 1.75rem; }
-    .viewer { height: calc(100vh - 200px); }
+    .container { padding: 1rem; }
+    .viewer { height: calc(100vh - 80px); }
   }
 </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>대학별 모집요강 자료실</h1>
-    <p class="subtitle">대학교 모집요강 PDF 모음</p>
-  </header>
-  
+  <div class="crumb" id="crumb"></div>
   <main id="content">
     <div class="empty">불러오는 중...</div>
   </main>
-  
-  <footer>
-    이 페이지는 자료 보관 및 공유 용도입니다.
-  </footer>
 </div>
 
 <script>
+// 설정: 본인의 GitHub 아이디와 저장소 이름을 입력하세요
 // =====================================================================
 const GITHUB_USER = 'seol0c';
-const GITHUB_REPO = 'univ_archive';
+const GITHUB_REPO = 'univ_archive'; 
 // =====================================================================
 
 const API_BASE = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents`;
 const cache = {};
-
-// 폴더 이름에서 정렬용 숫자 접두사 제거 (예: "01-서울대학교" → "서울대학교")
-function displayName(folderName) {
-  return folderName.replace(/^\d+[-_\s.]?\s*/, '');
-}
 
 async function listFolder(path) {
   if (cache[path]) return cache[path];
@@ -211,7 +160,7 @@ async function getUniversities() {
   const items = await listFolder('pdfs');
   return items
     .filter(i => i.type === 'dir')
-    .map(i => ({ folder: i.name, display: displayName(i.name) }))
+    .map(i => ({ folder: i.name }))
     .sort((a, b) => a.folder.localeCompare(b.folder, 'ko'));
 }
 
@@ -226,12 +175,23 @@ async function getYears(univFolder) {
     .sort((a, b) => b.label.localeCompare(a.label));
 }
 
+function setCrumb(parts) {
+  const crumbEl = document.getElementById('crumb');
+  const html = parts.map((p, i) => {
+    const isLast = i === parts.length - 1;
+    if (isLast) return p.label;
+    return `<a href="${p.href}">${p.label}</a>`;
+  }).join(' / ');
+  crumbEl.innerHTML = html;
+}
+
 async function render() {
   const content = document.getElementById('content');
   const hash = decodeURIComponent(window.location.hash.slice(1));
   
   try {
     if (!hash) {
+      setCrumb([{ label: '전체' }]);
       content.innerHTML = '<div class="empty">불러오는 중...</div>';
       const univs = await getUniversities();
       renderHome(content, univs);
@@ -246,22 +206,35 @@ async function render() {
     const years = await getYears(univFolder);
     
     if (!label) {
+      setCrumb([
+        { label: '전체', href: '#' },
+        { label: univFolder }
+      ]);
       renderUniv(content, univFolder, years);
       return;
     }
     
     const yearData = years.find(y => y.label === label);
     if (!yearData) {
+      setCrumb([
+        { label: '전체', href: '#' },
+        { label: univFolder }
+      ]);
       renderUniv(content, univFolder, years);
       return;
     }
     
-    renderViewer(content, univFolder, yearData);
+    setCrumb([
+      { label: '전체', href: '#' },
+      { label: univFolder, href: `#${encodeURIComponent(univFolder)}` },
+      { label: yearData.label }
+    ]);
+    renderViewer(content, yearData);
   } catch (err) {
+    setCrumb([{ label: '전체' }]);
     content.innerHTML = `
       <div class="empty">
-        목록을 불러오지 못했습니다.<br>
-        GITHUB_USER와 GITHUB_REPO 설정 또는 폴더 구조를 확인해주세요.
+        목록을 불러오지 못했습니다.
         <small>${err.message}</small>
       </div>
     `;
@@ -276,50 +249,31 @@ function renderHome(el, univs) {
   }
   
   const cards = univs.map(u => `
-    <a class="card" href="#${encodeURIComponent(u.folder)}">
-      <div class="card-name">${u.display}</div>
-    </a>
+    <a class="card" href="#${encodeURIComponent(u.folder)}">${u.folder}</a>
   `).join('');
   
   el.innerHTML = `<div class="grid">${cards}</div>`;
 }
 
 function renderUniv(el, univFolder, years) {
-  const name = displayName(univFolder);
-  
   if (years.length === 0) {
-    el.innerHTML = `
-      <div class="crumb"><a href="#">전체</a> / ${name}</div>
-      <div class="empty">아직 등록된 자료가 없습니다.</div>
-    `;
+    el.innerHTML = `<div class="empty">아직 등록된 자료가 없습니다.</div>`;
     return;
   }
   
   const items = years.map(y => `
     <a class="year-item" href="#${encodeURIComponent(univFolder)}/${encodeURIComponent(y.label)}">
-      <span class="year-num">${y.label}</span>
+      <span>${y.label}</span>
       <span class="year-arrow">→</span>
     </a>
   `).join('');
   
-  el.innerHTML = `
-    <div class="crumb"><a href="#">전체</a> / ${name}</div>
-    <div class="year-list">${items}</div>
-  `;
+  el.innerHTML = `<div class="year-list">${items}</div>`;
 }
 
-function renderViewer(el, univFolder, yearData) {
-  const name = displayName(univFolder);
-  el.innerHTML = `
-    <div class="crumb">
-      <a href="#">전체</a> / 
-      <a href="#${encodeURIComponent(univFolder)}">${name}</a> / 
-      ${yearData.label}
-    </div>
-    <div class="viewer">
-      <iframe src="${yearData.file.split('/').map(encodeURIComponent).join('/')}" title="${name} ${yearData.label} 모집요강"></iframe>
-    </div>
-  `;
+function renderViewer(el, yearData) {
+  const filePath = yearData.file.split('/').map(encodeURIComponent).join('/');
+  el.innerHTML = `<div class="viewer"><iframe src="${filePath}" title="${yearData.label}"></iframe></div>`;
 }
 
 window.addEventListener('hashchange', render);
